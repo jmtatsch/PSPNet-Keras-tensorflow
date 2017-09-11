@@ -18,6 +18,7 @@ import tensorflow as tf
 import layers_builder as layers
 import utils
 import matplotlib.pyplot as plt
+from cityscapes_labels import name2label
 
 __author__ = "Vlad Kryvoruchko, Chaoyue Wang, Jeffrey Hu & Julian Tatsch"
 
@@ -160,11 +161,23 @@ def pad_image(img, target_size):
 
 
 def visualize_prediction(prediction):
-    """Visualize prediction."""
-    cm = np.argmax(prediction, axis=2) + 1
+    """Visualize prediction in faux colors."""
+    cm = np.argmax(prediction, axis=2)
     color_cm = utils.add_color(cm)
     plt.imshow(color_cm)
     plt.show()
+
+
+def show_class_heatmap(class_scores, class_name):
+    """Show a heatmap with the probabilities of a certain class."""
+    try:
+        class_id = name2label[class_name].trainId
+        class_heatmap = class_scores[:, :, class_id]
+        plt.axis('off')
+        plt.imshow(class_heatmap, cmap='coolwarm')
+        plt.show()
+    except KeyError as err:
+        print("Could not find class index.")
 
 
 def predict_sliding(full_image, net, flip_evaluation):
@@ -279,7 +292,7 @@ if __name__ == "__main__":
             EVALUATION_SCALES = [0.15, 0.25, 0.5]  # must be all floats!
 
         class_scores = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
-
+        show_class_heatmap(class_scores, 'person')
         print("Writing results...")
 
         class_image = np.argmax(class_scores, axis=2)
