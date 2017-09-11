@@ -1,6 +1,9 @@
 numpy
 scipy
+pillow
 matplotlib
 tensorflow
 tensorflow-gpu
 keras
+h5py
+cityscapesscripts

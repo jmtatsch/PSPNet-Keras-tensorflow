@@ -2,14 +2,12 @@ from __future__ import print_function
 import colorsys
 import numpy as np
 from keras.models import Model
-from cityscapes_labels import trainId2label
-from ade20k_labels import ade20k_id2label
-from pascal_voc_labels import voc_id2label
 
 
 def class_image_to_image(class_id_image, class_id_to_rgb_map):
     """Map the class image to a rgb-color image."""
-    colored_image = np.zeros((class_id_image.shape[0], class_id_image.shape[1], 3), np.uint8)
+    colored_image = np.zeros((class_id_image.shape[0],
+                              class_id_image.shape[1], 3), np.uint8)
     for row in range(class_id_image.shape[0]):
         for col in range(class_id_image.shape[1]):
             try:
@@ -19,14 +17,12 @@ def class_image_to_image(class_id_image, class_id_to_rgb_map):
     return colored_image
 
 
-def color_class_image(class_image, model_name):
-    """Color classed depending on the model used."""
-    if 'cityscapes' in model_name:
-        colored_image = class_image_to_image(class_image, trainId2label)
-    elif 'voc' in model_name:
-        colored_image = class_image_to_image(class_image, voc_id2label)
-    elif 'ade20k' in model_name:
-        colored_image = class_image_to_image(class_image, ade20k_id2label)
+def color_class_image(class_image, id2label):
+    """Color classes according to their original colormap."""
+    if id2label:
+        colored_image = class_image_to_image(class_image, id2label)
+        colored_image = class_image_to_image(class_image, id2label)
+        colored_image = class_image_to_image(class_image, id2label)
     else:
         colored_image = add_color(class_image)
     return colored_image
@@ -42,7 +38,7 @@ def add_color(img):
 
 
 def to_color(category):
-    """Map each category color a good distance away from each other on the HSV color space."""
+    """Map each category color a good distance from each other on the HSV color space."""
     v = (category-1)*(137.5/360)
     return colorsys.hsv_to_rgb(v, 1, 1)
 
@@ -63,5 +59,6 @@ def print_activation(model, layer_name, data):
 
 
 def array_to_str(a):
+    """Dume activation parameters into a string."""
     return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a),
                                    np.max(a), np.mean(a))

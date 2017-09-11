@@ -1,17 +1,7 @@
 #!/usr/bin/python
-#
-# Pascal VOC labels
-#
+"""Pascal VOC labels."""
 
-from collections import namedtuple
-import numpy as np
-
-Label = namedtuple('Label', [
-
-    'name',
-    'id',
-    'color'
-])
+from label import Label
 
 labels = [Label('background', 0, (0, 0, 0)),
           Label('aeroplane', 1, (128, 0, 0)),
@@ -36,11 +26,21 @@ labels = [Label('background', 0, (0, 0, 0)),
           Label('tvmonitor', 20, (0, 64, 128)),
           Label('void', 21, (128, 64, 12))]
 
-voc_id2label = {label.id: label for label in labels}
+# name to label object
+name2label = {label.name: label for label in labels}
+# id to label object
+id2label = {label.id: label for label in labels}
 
 
 def generate_color_map(N=256, normalized=False):
-    """from https://gist.github.com/wllhf/a4533e0adebe57e3ed06d4b50c8419ae ."""
+    """
+    Generate the Pascal Voc Color map.
+
+    Ported to python by
+    https://gist.github.com/wllhf/a4533e0adebe57e3ed06d4b50c8419ae .
+    """
+    import numpy as np
+
     def bitget(byteval, idx):
         return ((byteval & (1 << idx)) != 0)
 
@@ -62,10 +62,13 @@ def generate_color_map(N=256, normalized=False):
 
 
 def generate_voc_labels():
-    labels = ['background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow',
-              'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor', 'void']
+    """Fuse the labels with the corresponding colors from the colormap."""
+    labels = ['background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle',
+              'bus', 'car', 'cat', 'chair', 'cow', 'diningtable', 'dog',
+              'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa',
+              'train', 'tvmonitor', 'void']
     color_map = generate_color_map()
-    for id, name in enumerate(labels):
-        color = color_map[id]
+    for class_id, name in enumerate(labels):
+        color = color_map[class_id]
         print("Label(\'%s\', %i, (%i, %i, %i))," %
-              (name, id, color[0], color[1], color[2]))
+              (name, class_id, color[0], color[1], color[2]))

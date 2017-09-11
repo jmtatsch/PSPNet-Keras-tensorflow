@@ -10,6 +10,7 @@ from os.path import splitext, join, isfile
 from os import environ
 from math import ceil
 import argparse
+import urllib
 import numpy as np
 from scipy import misc, ndimage
 from keras import backend as K
@@ -17,8 +18,10 @@ from keras.models import model_from_json
 import tensorflow as tf
 import layers_builder as layers
 import utils
+from evaluation import evaluate
 import matplotlib.pyplot as plt
-from cityscapes_labels import name2label
+from matplotlib.widgets import RadioButtons
+
 
 __author__ = "Vlad Kryvoruchko, Chaoyue Wang, Jeffrey Hu & Julian Tatsch"
 
@@ -36,6 +39,10 @@ class PSPNet(object):
         self.input_shape = input_shape
         json_path = join("weights", "keras", weights + ".json")
         h5_path = join("weights", "keras", weights + ".h5")
+
+        # downloader = urllib.URLopener()
+        # downloader.retrieve("https://www.dropbox.com/s/ms8afun494dlh1t/pspnet50_ade20k.npy?dl=0", "pspnet50_ade20k.npy")
+
         if isfile(json_path) and isfile(h5_path):
             print("Keras model & weights found, loading...")
             with open(json_path, 'r') as file_handle:
@@ -91,7 +98,7 @@ class PSPNet(object):
         h5_path = join("weights", "keras", weights_path + ".h5")
 
         print("Importing weights from %s" % npy_weights_path)
-        weights = np.load(npy_weights_path).item()
+        weights = np.load(npy_weights_path, encoding="latin1").item()
 
         whitelist = ["InputLayer", "Activation", "ZeroPadding2D", "Add", "MaxPooling2D", "AveragePooling2D", "Lambda", "Concatenate", "Dropout"]
 
@@ -160,35 +167,104 @@ def pad_image(img, target_size):
     return padded_img
 
 
-def visualize_prediction(prediction):
+def produce_view(input_image, class_image, viewstyle):
+    """Produce an image ready for plotting or saving."""
+    view = None
+    if viewstyle == 'original':
+        view = input_image
+    elif (viewstyle == 'predictions') or (viewstyle == 'overlay'):
+        view = utils.color_class_image(class_image, id2label)
+        if viewstyle == 'overlay':
+            view = (0.5 * view.astype(np.float32) + 0.5 * input_image.astype(np.float32)).astype(np.uint8)
+    else:
+        print("Unknown view style")
+    return view
+
+
+def visualize_prediction(input_image, class_scores):
     """Visualize prediction in faux colors."""
-    cm = np.argmax(prediction, axis=2)
-    color_cm = utils.add_color(cm)
-    plt.imshow(color_cm)
+    class_image = np.argmax(class_scores, axis=2)
+    fig = plt.figure()
+    axis = fig.add_subplot(111)
+
+    def button_handler(viewstyle):
+        axis.imshow(produce_view(input_image, class_image, viewstyle))
+        plt.draw()
+
+    # plt.subplots_adjust(left=0.3)
+    rax = plt.axes([0.4, 0.05, 0.2, 0.15])
+    radio_buttons = RadioButtons(rax, ('original', 'overlay', 'predictions'))
+    radio_buttons.on_clicked(button_handler)
+
+    # image = produce_view(input_image, class_image, 'overlay')
+    # axis.imshow(image)
+    button_handler('original')
+    axis.set_axis_off()
+    # overwrite the status bar with class information
+    axis.format_coord = lambda x, y: id2label[class_image[int(y), int(x)]].name
     plt.show()
 
 
 def show_class_heatmap(class_scores, class_name):
     """Show a heatmap with the probabilities of a certain class."""
     try:
-        class_id = name2label[class_name].trainId
+        class_id = name2label[class_name].id
         class_heatmap = class_scores[:, :, class_id]
         plt.axis('off')
         plt.imshow(class_heatmap, cmap='coolwarm')
         plt.show()
     except KeyError as err:
-        print("Could not find class index.")
+        print("Could not find index for %s because" % (class_name, err))
+
+
+def show_class_heatmaps(class_scores):
+    """
+    Show heatmap with the probabilities of a certain class.
+
+    Cycle through with lef and right arrow keys.
+    """
+    show_class_heatmaps.curr_index = 0
+
+    def key_event(event):
+        """Handle forward & backward arrow key presses."""
+        if event.key == "right":
+            show_class_heatmaps.curr_index += 1
+        elif event.key == "left":
+            show_class_heatmaps.curr_index -= 1
+        else:
+            return
+        show_class_heatmaps.curr_index = show_class_heatmaps.curr_index % class_scores.shape[2]
+
+        axis.cla()
+        class_heatmap = class_scores[:, :, show_class_heatmaps.curr_index]
+        axis.imshow(class_heatmap, cmap='coolwarm')
+        axis.set_axis_off()
+        fig.canvas.set_window_title(id2label[show_class_heatmaps.curr_index].name)
+        fig.canvas.draw()
+
+    fig = plt.figure()
+    fig.canvas.mpl_connect('key_press_event', key_event)
+    fig.canvas.set_window_title(id2label[show_class_heatmaps.curr_index].name)
+    axis = fig.add_subplot(111)
+    class_heatmap = class_scores[:, :, show_class_heatmaps.curr_index]
+    axis.imshow(class_heatmap, cmap='coolwarm')
+    axis.set_axis_off()
+    plt.show()
 
 
 def predict_sliding(full_image, net, flip_evaluation):
-    """Predict on tiles of exactly the network input shape so nothing gets squeezed."""
+    """
+    Predict on tiles of exactly the network input shape.
+
+    This way nothing gets squeezed.
+    """
     tile_size = net.input_shape
     classes = net.model.outputs[0].shape[3]
     overlap = 1/3
 
     stride = ceil(tile_size[0] * (1 - overlap))
-    tile_rows = int(ceil((full_image.shape[0] - tile_size[0]) / stride) + 1)  # strided convolution formula
-    tile_cols = int(ceil((full_image.shape[1] - tile_size[1]) / stride) + 1)
+    tile_rows = max(int(ceil((full_image.shape[0] - tile_size[0]) / stride) + 1), 1)  # strided convolution formula
+    tile_cols = max(int(ceil((full_image.shape[1] - tile_size[1]) / stride) + 1), 1)
     print("Need %i x %i prediction tiles @ stride %i px" % (tile_cols, tile_rows, stride))
     full_probs = np.zeros((full_image.shape[0], full_image.shape[1], classes))
     count_predictions = np.zeros((full_image.shape[0], full_image.shape[1], classes))
@@ -244,6 +320,16 @@ def predict_multi_scale(full_image, net, scales, sliding_evaluation, flip_evalua
     return full_probs
 
 
+def trainid_to_class_image(trainid_image):
+    """Inflate an image with trainId's into a full class image with class ids."""
+    from cityscapesscripts.helpers.csHelpers import trainId2label
+    class_image = np.zeros(trainid_image.shape, np.uint8)
+    for row in range(trainid_image.shape[0]):
+        for col in range(trainid_image.shape[1]):
+            class_image[row][col] = trainId2label[trainid_image[row][col]].id
+    return class_image
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', type=str, default='pspnet50_ade20k',
@@ -262,6 +348,8 @@ if __name__ == "__main__":
                         help="Whether the network should predict on both image and flipped image.")
     parser.add_argument('-ms', '--multi_scale', action='store_true',
                         help="Whether the network should predict on multiple scales.")
+    parser.add_argument('-hm', '--heat_maps', action='store_true',
+                        help="Whether the network should diplay heatmaps.")
     args = parser.parse_args()
 
     environ["CUDA_VISIBLE_DEVICES"] = args.id
@@ -276,13 +364,18 @@ if __name__ == "__main__":
         if "pspnet50" in args.model:
             pspnet = PSPNet50(nb_classes=150, input_shape=(473, 473),
                               weights=args.model)
+            if "ade20k" in args.model:
+                from ade20k_labels import id2label, name2label
+
         elif "pspnet101" in args.model:
             if "cityscapes" in args.model:
                 pspnet = PSPNet101(nb_classes=19, input_shape=(713, 713),
                                    weights=args.model)
+                from cityscapes_labels import id2label, name2label
             if "voc2012" in args.model:
                 pspnet = PSPNet101(nb_classes=21, input_shape=(473, 473),
                                    weights=args.model)
+                from pascal_voc_labels import id2label, name2label
 
         else:
             print("Network architecture not implemented.")
@@ -292,15 +385,29 @@ if __name__ == "__main__":
             EVALUATION_SCALES = [0.15, 0.25, 0.5]  # must be all floats!
 
         class_scores = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
-        show_class_heatmap(class_scores, 'person')
+        if args.heat_maps:
+            # show_class_heatmap(class_scores, 'person')
+            show_class_heatmaps(class_scores)
+
+        visualize_prediction(img, class_scores)
+        class_image = np.argmax(class_scores, axis=2)
+
         print("Writing results...")
 
-        class_image = np.argmax(class_scores, axis=2)
         pm = np.max(class_scores, axis=2)
-        colored_class_image = utils.color_class_image(class_image, args.model)
+        colored_class_image = utils.color_class_image(class_image, id2label)
+
         # colored_class_image is [0.0-1.0] img is [0-255]
         alpha_blended = 0.5 * colored_class_image + 0.5 * img
         filename, ext = splitext(args.output_path)
         misc.imsave(filename + "_seg" + ext, colored_class_image)
         misc.imsave(filename + "_probs" + ext, pm)
         misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
+
+        if "cityscapes" in args.model:
+            print("Evaluating results...")
+            class_image = trainid_to_class_image(class_image)
+            pred_name = filename + "_seg_grey" + ".png"
+            misc.imsave(pred_name, class_image)
+            gt_path = "example_groundtruth/munster_000013_000019_gtFine_labelIds.png"
+            evaluate([pred_name], [gt_path])

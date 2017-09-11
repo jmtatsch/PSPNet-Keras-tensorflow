@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+"""Convert the weights from pycaffe to an intermediary numpy weight file."""
 from __future__ import print_function
 
 import sys
@@ -8,11 +8,9 @@ import numpy as np
 
 import caffe
 
-# Not needed because Tensorflow and Caffe do convolution the same way
-# Needed for conversion to Theano
-
 
 def rot90(W):
+    """Rotate the weights for conversion to Theano."""
     for i in range(W.shape[0]):
         for j in range(W.shape[1]):
             W[i, j] = np.rot90(W[i, j], 2)
@@ -24,7 +22,7 @@ assert "prototxt" in splitext(sys.argv[1])[1], "First argument must be caffe pro
 assert "caffemodel" in splitext(sys.argv[2])[1], "Second argument must be caffe weights %s" % sys.argv[2]
 net = caffe.Net(sys.argv[1], sys.argv[2], caffe.TEST)
 for k, v in net.params.items():
-    print ("Layer %s, has %d params." % (k, len(v)))
+    print("Layer %s, has %d params." % (k, len(v)))
     if len(v) == 1:
         W = v[0].data[...]
         W = np.transpose(W, (2, 3, 1, 0))
@@ -40,7 +38,8 @@ for k, v in net.params.items():
         variance = v[1].data[...]
         scale = v[2].data[...]
         offset = v[3].data[...]
-        weights[k] = {"mean": mean, "variance": variance, "scale": scale, "offset": offset}
+        weights[k] = {"mean": mean, "variance": variance,
+                      "scale": scale, "offset": offset}
     else:
         print("Undefined layer")
         exit()
