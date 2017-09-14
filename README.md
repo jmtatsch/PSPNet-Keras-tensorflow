@@ -1,62 +1,59 @@
-# Keras implementation of [PSPNet(caffe)](https://github.com/hszhao/PSPNet)
+# A Keras implementation of Pyramid Scene Parsing Networks [PSPNet](https://github.com/hszhao/PSPNet)
 
-Implemented Architecture of Pyramid Scene Parsing Network in Keras.
+Original Paper and implementation:
 
-Converted trained weights are needed to run the network.
+```
+@inproceedings{zhao2017pspnet,
+  author = {Hengshuang Zhao and
+            Jianping Shi and
+            Xiaojuan Qi and
+            Xiaogang Wang and
+            Jiaya Jia},
+  title = {Pyramid Scene Parsing Network},
+  booktitle = {Proceedings of IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year = {2017}
+}
+```
 
-Weights of the original caffemodel can be converted with weight_converter.py as follows:
+# Installation:
+
+```bash
+python setup.py install
+```
+
+# Usage:
+
+```bash
+python pspnet.py
+python pspnet.py -m pspnet101_cityscapes -i ../example_images/munster_000013_000019_leftImg8bit.png -o ../example_results/munster_000013_000019_leftImg8bit.png -s -f
+python pspnet.py -m pspnet101_voc2012 -i ../example_images/000129.jpg -o ../example_results/000129.png -s -f
+python pspnet.py -m pspnet50_ade20k -i ../example_images/ADE_val_00000435.jpg -o ../example_results/ADE_val_00000435.png -s -f
+python pspnet.py -m pspnet50_ade20k -i ../example_images/ade20k.jpg -o ../example_results/ade20k.png -s -f
+
+```
+
+# Results:
+
+## ADE20K:
+<img src="example_images/ade20k.jpg" alt="Input" width="250"><img src="example_results/ade20k_seg.png" alt="Segmentation Keras" width="250"><img src="example_results/ade20k_seg_pycaffe.jpg" alt="Segmentation Original Pycaffe implementation" width="250"><img src="example_results/ade20k_seg_blended.png" width="250"><img src="example_results/ade20k_probs.png" alt="Uncertainty" width="250">
+
+<img src="example_images/ADE_val_00000435.jpg" alt="Input" width="250"><img src="example_results/ADE_val_00000435_seg.png" alt="Segmentation Keras" width="250"><img src="example_groundtruth/ADE_val_00000435_seg.png" alt="Groundtruth" width="250"><img src="example_results/ADE_val_00000435_seg_blended.png" width="250"><img src="example_results/ADE_val_00000435_probs.png" alt="Uncertainty" width="250">
+
+## CityScapes
+
+<img src="example_images/munster_000013_000019_leftImg8bit.png" alt="Input" width="250"><img src="example_results/munster_000013_000019_leftImg8bit_seg.png" alt="Segmentation Keras" width="250"><img src="example_groundtruth/munster_000013_000019_gtFine_colors.png" alt="Groundtruth" width="250"><img src="example_results/munster_000013_000019_leftImg8bit_seg_blended.png" width="250"><img src="example_results/munster_000013_000019_leftImg8bit_probs.png" alt="Uncertainty" width="250">
+
+## Pascal Voc 2012
+
+<img src="example_images/000129.jpg" alt="Input" width="250"><img src="example_results/000129_seg.png" alt="Segmentation Keras" width="250"><img src="example_groundtruth/000129.png" alt="Groundtruth" width="250">
+<img src="example_results/000129_seg_blended.png" width="250"><img src="example_results/000129_probs.png" alt="Uncertainty" width="250">
+
+# Converting caffe weights
+
+Converted trained weights are needed to run the network and will be downloaded from dropbox the first time you use a model. The weights of the original caffemodel were converted with weight_converter.py as follows:
 
 ```bash
 python weight_converter.py <path to .prototxt> <path to .caffemodel>
 ```
 
-Running this needs the compiled original PSPNet caffe code and pycaffe.
-Already converted weights can be downloaded here:
-
-[pspnet50_ade20k.npy](https://www.dropbox.com/s/ms8afun494dlh1t/pspnet50_ade20k.npy?dl=0)
-[pspnet101_cityscapes.npy](https://www.dropbox.com/s/b21j6hi6qql90l0/pspnet101_cityscapes.npy?dl=0)
-[pspnet101_voc2012.npy](https://www.dropbox.com/s/xkjmghsbn6sfj9k/pspnet101_voc2012.npy?dl=0)
-
-npy weights should be placed in the directory weights/npy.
-
-The interpolation layer is implemented as custom layer "Interp"
-
-## Keras result:
-![Original](example_images/ade20k.jpg)
-![New](example_results/ade20k_seg.jpg)
-![New](example_results/ade20k_seg_blended.jpg)
-![New](example_results/ade20k_probs.jpg)
-
-![Original](example_images/cityscapes.png)
-![New](example_results/cityscapes_seg.jpg)
-![New](example_results/cityscapes_seg_blended.jpg)
-![New](example_results/cityscapes_probs.jpg)
-
-![Original](example_images/pascal_voc.jpg)
-![New](example_results/pascal_voc_seg.jpg)
-![New](example_results/pascal_voc_seg_blended.jpg)
-![New](example_results/pascal_voc_probs.jpg)
-
-## Pycaffe result:
-![Pycaffe results](example_results/ade20k_seg_pycaffe.jpg)
-
-## Dependencies:
-
-
-1. Tensorflow (-gpu)
-2. Keras
-3. numpy
-4. scipy
-4. pycaffe(PSPNet)(optional for converting the weights)
-
-```bash
-pip install -r requirements.txt --upgrade
-```
-
-## Usage:
-
-```bash
-python pspnet.py
-python pspnet.py -m pspnet101_cityscapes -i example_images/cityscapes.png -o example_results/cityscapes.jpg
-python pspnet.py -m pspnet101_voc2012 -i example_images/pascal_voc.jpg -o example_results/pascal_voc.jpg
-```
+Running the converter needs the compiled original PSPNet caffe code and pycaffe.

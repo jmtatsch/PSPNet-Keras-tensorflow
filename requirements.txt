@@ -6,4 +6,5 @@ tensorflow
 tensorflow-gpu
 keras
 h5py
-cityscapesscripts
+requests
+git+https://github.com/jmtatsch/cityscapesScripts.git#egg=cityscapesscripts-0.1
