@@ -18,7 +18,7 @@ from keras.models import model_from_json
 import tensorflow as tf
 import layers_builder as layers
 import utils
-from evaluation import evaluate
+from evaluation import evaluate, evaluate_img_lists
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RadioButtons
 
@@ -345,7 +345,7 @@ def trainid_to_class_image(trainid_image):
 
 
 def main():
-    """business logic for when running this module as the primary one!"""
+    """Run when running this module as the primary one."""
     # These are the means for the ImageNet pretrained ResNet
     EVALUATION_SCALES = [1.0]  # must be all floats!
 
@@ -382,8 +382,6 @@ def main():
         print(cwd)
 
         img = misc.imread(args.input_path)
-
-
 
         if "pspnet50" in args.model:
             pspnet = PSPNet50(nb_classes=150, input_shape=(473, 473),
@@ -435,7 +433,8 @@ def main():
             pred_name = filename + "_seg_grey" + ".png"
             misc.imsave(pred_name, class_image)
             gt_path = "../example_groundtruth/munster_000013_000019_gtFine_labelIds.png"
-            evaluate([pred_name], [gt_path])
+            # evaluate([pred_name], [gt_path])
+            evaluate_img_lists([pred_name], [gt_path])
 
 
 if __name__ == "__main__":
