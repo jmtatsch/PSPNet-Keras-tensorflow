@@ -2,16 +2,10 @@
 """evaluate iou result with cityscapes tool."""
 import numpy as np
 from scipy import misc
-from cityscapesscripts.evaluation.evalPixelLevelSemanticLabeling import evaluateImgLists, args
-
-
-def evaluate(pred_imgs, gt_imgs):
-    """Thin wrapper around the cityscapes evaluation script."""
-    print("Evaluating %s against %s" % (pred_imgs, gt_imgs))
-    evaluateImgLists(pred_imgs, gt_imgs, args)
 
 
 def evaluate_img_lists(pred_imgs_paths, gt_imgs_paths):
+    """Evaluate lists with image paths."""
     pred_list = []
     gt_list = []
     for pred_path, gt_path in zip(pred_imgs_paths, gt_imgs_paths):
@@ -22,15 +16,16 @@ def evaluate_img_lists(pred_imgs_paths, gt_imgs_paths):
 
 def evaluate_iou(pred_imgs, gt_imgs, classes=35):
     """Evaluate a batch of predicted images against groundtruth."""
-    confusion_matrix = np.zeros((classes, classes))
+    confusion_matrix = np.zeros((classes, classes), dtype=float)
     for predicted, groundtruth in zip(pred_imgs, gt_imgs):
         flat_pred = np.ravel(predicted)
+        print(groundtruth.shape, np.min(groundtruth), np.max(groundtruth))
         flat_gt = np.ravel(groundtruth)
         for pred_val, gt_val in zip(flat_pred, flat_gt):
-            if gt_val == 0:  # if groundtruth doesnt count towards evaluation skip
+            if gt_val == 0:  # groundtruth doesn't count towards evaluation
                 continue
             elif pred_val < classes and gt_val < classes:
-                confusion_matrix[gt_val, pred_val] += 1  # count the cases
+                confusion_matrix[gt_val, pred_val] += 1  # count the occurences
             else:
                 print("Unknown predicted class detected", pred_val)
     intersection = np.diag(confusion_matrix)  # count the correct classifications i.e. the intersection

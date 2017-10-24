@@ -6,11 +6,13 @@ Original paper & code published by Hengshuang Zhao et al. (2017)
 """
 from __future__ import print_function
 from __future__ import division
-from os.path import splitext, join, isfile
-from os import environ
+from os.path import splitext, join, isfile, isdir
+from os import environ, listdir
 from math import ceil
 import argparse
 import requests
+import glob
+import fnmatch
 import numpy as np
 from scipy import misc, ndimage
 from keras import backend as K
@@ -18,7 +20,7 @@ from keras.models import model_from_json
 import tensorflow as tf
 import layers_builder as layers
 import utils
-from evaluation import evaluate, evaluate_img_lists
+from evaluation import evaluate_iou
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RadioButtons
 
@@ -32,6 +34,7 @@ class PSPNet(object):
     def __init__(self, nb_classes, resnet_layers, input_shape, weights):
         """Instanciate a PSPNet."""
         self.input_shape = input_shape
+        self.nb_classes = nb_classes
         json_path = join("..", "weights", "keras", weights + ".json")
         h5_path = join("..", "weights", "keras", weights + ".h5")
 
@@ -41,7 +44,19 @@ class PSPNet(object):
         if isfile(json_path) and isfile(h5_path):
             print("Keras model & weights found, loading...")
             with open(json_path, 'r') as file_handle:
-                self.model = model_from_json(file_handle.read())
+                try:
+                    self.model = model_from_json(file_handle.read())
+                except ValueError as e:  # bad marshal data error when loading py2 model in py3 an vice versa
+                    # https://github.com/fchollet/keras/issues/7440
+                    print("Couldn't import model from json because it was build using a different python version.")
+                    print("Rebuilding pspnet model ...")
+                    self.model = layers.build_pspnet(nb_classes=nb_classes,
+                                                     resnet_layers=resnet_layers,
+                                                     input_shape=self.input_shape)
+                    print("Saving pspnet to disk ...")
+                    json_string = self.model.to_json()
+                    with open(json_path, 'w') as file_handle:
+                        file_handle.write(json_string)
             self.model.load_weights(h5_path)
         else:
             print("No Keras model & weights found, import from npy weights.")
@@ -344,6 +359,13 @@ def trainid_to_class_image(trainid_image):
     return class_image
 
 
+def find_matching_gt(gt_dir, image_name):
+    """Find a matching ground truth in gt_dir for image_name."""
+    for file in listdir(gt_dir):
+        if fnmatch.fnmatch(file, image_name+"*"):
+            return join(gt_dir, file)
+
+
 def main():
     """Run when running this module as the primary one."""
     # These are the means for the ImageNet pretrained ResNet
@@ -359,6 +381,8 @@ def main():
                         help='Path the input image')
     parser.add_argument('-o', '--output_path', type=str, default='../example_results/ade20k.jpg',
                         help='Path to output')
+    parser.add_argument('-g', '--groundtruth_path', type=str, default='../example_groundtruth',
+                        help='Path to groundtruth')
     parser.add_argument('--id', default="0")
     parser.add_argument('-s', '--sliding', action='store_true',
                         help="Whether the network should be slided over the original image for prediction.")
@@ -368,6 +392,8 @@ def main():
                         help="Whether the network should predict on multiple scales.")
     parser.add_argument('-hm', '--heat_maps', action='store_true',
                         help="Whether the network should diplay heatmaps.")
+    parser.add_argument('-v', '--vis', action='store_false',
+                        help="Whether an interactive plot should be diplayed.")
     args = parser.parse_args()
 
     environ["CUDA_VISIBLE_DEVICES"] = args.id
@@ -379,16 +405,23 @@ def main():
         print(args)
         import os
         cwd = os.getcwd()
-        print(cwd)
+        print("Running in %s" % cwd)
 
-        img = misc.imread(args.input_path)
+        image_paths = []
+        if isfile(args.input_path):
+            image_paths.append(args.input_path)
+        elif isdir(args.input_path):
+            file_types = ('png', 'jpg')
+            for file_type in file_types:
+                image_paths.extend(glob.glob(join(args.input_path + '/*.' + file_type), recursive=True))
+            image_paths = sorted(image_paths)
+        print(image_paths)
 
         if "pspnet50" in args.model:
             pspnet = PSPNet50(nb_classes=150, input_shape=(473, 473),
                               weights=args.model)
             if "ade20k" in args.model:
                 from ade20k_labels import id2label, name2label
-                print("imported id2label")
 
         elif "pspnet101" in args.model:
             if "cityscapes" in args.model:
@@ -404,37 +437,46 @@ def main():
             print("Network architecture not implemented.")
 
         if args.multi_scale:
-            EVALUATION_SCALES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]  # must be all floats!
+            EVALUATION_SCALES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]  # original implementation, must be all floats!
             EVALUATION_SCALES = [0.15, 0.25, 0.5]  # must be all floats!
 
-        class_scores = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
-        if args.heat_maps:
-            # show_class_heatmap(class_scores, 'person')
-            show_class_heatmaps(class_scores)
+        for image_path in image_paths:
+            image_name, ext = splitext(os.path.basename(image_path))
+            print("Predicting image name: %s" % image_name)
+            img = misc.imread(image_path)
+            class_scores = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
+            if args.heat_maps:
+                # show_class_heatmap(class_scores, 'person')
+                show_class_heatmaps(class_scores)
 
-        visualize_prediction(img, class_scores, id2label)
-        class_image = np.argmax(class_scores, axis=2)
+            # visualize_prediction(img, class_scores, id2label)
+            class_image = np.argmax(class_scores, axis=2)
 
-        print("Writing results...")
+            output_path, _ = splitext(args.output_path)
+            if not os.path.exists(output_path):
+                os.makedirs(output_path)
+            output_path = join(output_path, image_name)
 
-        pm = np.max(class_scores, axis=2)
-        colored_class_image = utils.color_class_image(class_image, id2label)
+            print("Writing results to %s" % output_path)
 
-        # colored_class_image is [0.0-1.0] img is [0-255]
-        alpha_blended = 0.5 * colored_class_image + 0.5 * img
-        filename, ext = splitext(args.output_path)
-        misc.imsave(filename + "_seg" + ext, colored_class_image)
-        misc.imsave(filename + "_probs" + ext, pm)
-        misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
+            pm = np.max(class_scores, axis=2)
+            colored_class_image = utils.color_class_image(class_image, id2label)
 
-        if "cityscapes" in args.model:
-            print("Evaluating results...")
-            class_image = trainid_to_class_image(class_image)
-            pred_name = filename + "_seg_grey" + ".png"
-            misc.imsave(pred_name, class_image)
-            gt_path = "../example_groundtruth/munster_000013_000019_gtFine_labelIds.png"
-            # evaluate([pred_name], [gt_path])
-            evaluate_img_lists([pred_name], [gt_path])
+            # colored_class_image is [0.0-1.0] img is [0-255]
+            alpha_blended = 0.5 * colored_class_image + 0.5 * img
+            misc.imsave(output_path + "_seg" + ext, colored_class_image)
+            misc.imsave(output_path + "_probs" + ext, pm)
+            misc.imsave(output_path + "_seg_blended" + ext, alpha_blended)
+
+            gt_path = find_matching_gt(args.groundtruth_path, image_name)
+
+            if gt_path is not None:
+                print("Evaluating result with %s" % gt_path)
+                if "cityscapes" in args.model:
+                    class_image = trainid_to_class_image(class_image)
+                    evaluate_iou([class_image], [misc.imread(gt_path)], classes=35)
+                else:
+                    evaluate_iou([colored_class_image], [misc.imread(gt_path)], classes=pspnet.nb_classes)
 
 
 if __name__ == "__main__":
