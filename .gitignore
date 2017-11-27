@@ -4,3 +4,7 @@
 *.prototxt
 *.h5
 *.json
+*.project
+*.pydevproject
+private/
+.cache/

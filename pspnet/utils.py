@@ -6,15 +6,29 @@ from keras.models import Model
 
 def class_image_to_image(class_id_image, class_id_to_rgb_map):
     """Map the class image to a rgb-color image."""
-    colored_image = np.zeros((class_id_image.shape[0],
-                              class_id_image.shape[1], 3), np.uint8)
-    for row in range(class_id_image.shape[0]):
-        for col in range(class_id_image.shape[1]):
-            try:
-                colored_image[row, col, :] = class_id_to_rgb_map[int(class_id_image[row, col])].color
-            except KeyError as key_error:
-                print("Warning: could not resolve classid %s" % key_error)
+    colored_image = np.zeros((class_id_image.shape[0], class_id_image.shape[1], 3), np.uint8)
+    for i in range(-1, 256):  # go through possible classes and color their regions at once
+        try:
+            cl = class_id_to_rgb_map[i]
+            colored_image[class_id_image[:, :] == i] = cl.color
+        except KeyError as key_error:
+            # print("Warning: could not resolve classid %s" % key_error)
+            pass
     return colored_image
+
+
+def gt_image_to_class_image(gt_image, class_id_to_rgb_map):
+    """Map the rgb-color gt_image to a class image."""
+    class_image = np.zeros((gt_image.shape[0], gt_image.shape[1]), np.uint8)
+    for class_id in range(-1, 256):  # go through possible classes and color their regions at once
+        try:
+            class_color = list(class_id_to_rgb_map[class_id].color)
+            # print("treating class %i i.e. color %s" % (class_id, class_color))
+            class_image[np.where((gt_image == class_color).all(axis=2))] = class_id
+        except KeyError as key_error:
+            # print("Warning: could not resolve classid %s" % key_error)
+            pass
+    return class_image
 
 
 def color_class_image(class_image, id2label):
