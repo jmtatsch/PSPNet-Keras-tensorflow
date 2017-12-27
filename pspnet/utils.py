@@ -12,7 +12,7 @@ def class_image_to_image(class_id_image, class_id_to_rgb_map):
             cl = class_id_to_rgb_map[i]
             colored_image[class_id_image[:, :] == i] = cl.color
         except KeyError as key_error:
-            # print("Warning: could not resolve classid %s" % key_error)
+            print("Warning: could not resolve color of classid %s" % key_error)
             pass
     return colored_image
 

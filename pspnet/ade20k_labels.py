@@ -166,9 +166,9 @@ def import_labels_from_mat():
     import scipy.io
     colors = scipy.io.loadmat('utils/colorization/color150.mat')
     object_names = scipy.io.loadmat('utils/colorization/objectName150.mat')
-    for id in range(150):
-        color = colors['colors'][id]
-        name = object_names['objectNames'][id][0][0]
-        labels.append(Label(name, id, color))
-        print("Label(\'%s\', %i, (%i, %i, %i))," % (name, id, color[0],
+    for class_id in range(150):
+        color = colors['colors'][class_id]
+        name = object_names['objectNames'][class_id][0][0]
+        labels.append(Label(name, class_id, color))
+        print("Label(\'%s\', %i, (%i, %i, %i))," % (name, class_id, color[0],
                                                     color[1], color[2]))

@@ -106,7 +106,7 @@ def ResNet(inp, layers):
              "conv1_3_3x3",
              "conv1_3_3x3_bn"]
 
-    # Short branch(only start of network)
+    # Short branch (only start of network)
 
     cnv1 = Conv2D(64, (3, 3), strides=(2, 2), padding='same', name=names[0],
                   use_bias=False)(inp)  # "conv1_1_3x3_s2"
@@ -126,14 +126,9 @@ def ResNet(inp, layers):
     res = MaxPooling2D(pool_size=(3, 3), padding='same',
                        strides=(2, 2))(relu1)  # "pool1_3x3_s2"
 
-    # ---Residual layers(body of network)
+    # Residual layers (body of network)
 
-    """
-    Modify_stride --Used only once in first 3_1 convolutions block.
-    changes stride of first convolution from 1 -> 2
-    """
-
-    # 2_1- 2_3
+    # 2_1 - 2_3
     res = residual_short(res, 1, pad=1, lvl=2, sub_lvl=1)
     for i in range(2):
         res = residual_empty(res, 1, pad=1, lvl=2, sub_lvl=i+2)

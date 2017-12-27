@@ -67,13 +67,13 @@ class PSPNet(object):
 
     def download_weights(self, name):
         """Download Keras weights from Dropbox."""
-        print("Downloading Keras weights from Dropbox...")
-        link_dict = {'pspnet50_ade20k.h5': 'https://www.dropbox.com/s/rpy4ffzxj7nn6lg/pspnet50_ade20k.h5?dl=1',
-                     'pspnet50_ade20k.json': 'https://www.dropbox.com/s/jklwhm8whdp2olr/pspnet50_ade20k.json?dl=1',
-                     'pspnet101_cityscapes.h5': 'https://www.dropbox.com/s/af7n6bypgerbpuf/pspnet101_cityscapes.h5?dl=1',
-                     'pspnet101_cityscapes.json': 'https://www.dropbox.com/s/1alz4jc5nq91dus/pspnet101_cityscapes.json?dl=1',
-                     'pspnet101_voc2012.h5': 'https://www.dropbox.com/s/e7o0ziwkiq85jmh/pspnet101_voc2012.h5?dl=1',
-                     'pspnet101_voc2012.json': 'https://www.dropbox.com/s/modyaa7c0inhe9y/pspnet101_voc2012.json?dl=1'}
+        print("Downloading Keras weights from Dropbox ...")
+        link_dict = {'pspnet50_ade20k.h5': 'https://www.dropbox.com/s/0uxn14y26jcui4v/pspnet50_ade20k.h5?dl=1',
+                     'pspnet50_ade20k.json': 'https://www.dropbox.com/s/v41lvku2lx7lh6m/pspnet50_ade20k.json?dl=1',
+                     'pspnet101_cityscapes.h5': 'https://www.dropbox.com/s/c17g94n946tpalb/pspnet101_cityscapes.h5?dl=1',
+                     'pspnet101_cityscapes.json': 'https://www.dropbox.com/s/fswowe8e3o14tdm/pspnet101_cityscapes.json?dl=1',
+                     'pspnet101_voc2012.h5': 'https://www.dropbox.com/s/uvqj2cjo4b9c5wg/pspnet101_voc2012.h5?dl=1',
+                     'pspnet101_voc2012.json': 'https://www.dropbox.com/s/rr5taqu19f5fuzy/pspnet101_voc2012.json?dl=1'}
 
         for key in link_dict:
             if name in key:
@@ -242,7 +242,7 @@ def show_class_heatmap(class_scores, class_name):
         plt.imshow(class_heatmap, cmap='coolwarm')
         plt.show()
     except KeyError as err:
-        print("Could not find index for %s because" % (class_name, err))
+        print("Could not find index for %s because of %s" % (class_name, err))
 
 
 def show_class_heatmaps(class_scores):
@@ -365,11 +365,11 @@ def trainid_to_class_image(trainid_image):
 def find_matching_gt(gt_dir, image_name, model_name, verbose=False):
     """Find a matching ground truth in gt_dir for image_name."""
     if "cityscapes" in model_name:
-        filter = image_name+"*labelIds.png"
+        filter_string = image_name + "*labelIds.png"
     else:
-        filter = image_name+"*.png"
-    for root, dirs, files in walk(gt_dir):
-        for filename in fnmatch.filter(files, filter):
+        filter_string = image_name + "*.png"
+    for root, __, files in walk(gt_dir):
+        for filename in fnmatch.filter(files, filter_string):
             if verbose:
                 print("Found matching groundtruth at: %s" % join(root, filename))
             return join(root, filename)
