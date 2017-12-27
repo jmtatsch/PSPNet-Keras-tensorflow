@@ -10,7 +10,6 @@ from os.path import splitext, join, isfile, isdir
 from os import environ, walk
 from math import ceil
 import argparse
-import requests
 import glob
 import fnmatch
 import numpy as np

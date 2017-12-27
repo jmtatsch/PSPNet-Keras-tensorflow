@@ -8,3 +8,6 @@
 *.pydevproject
 private/
 .cache/
+build/
+dist/
+pspnet.egg-info/

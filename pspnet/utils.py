@@ -1,5 +1,9 @@
+"""Utility functions."""
+
 from __future__ import print_function
 import colorsys
+import requests
+from os.path import join
 import numpy as np
 from keras.models import Model
 
@@ -16,7 +20,7 @@ def preprocess_image(img, mean=np.array([[[123.68, 116.779, 103.939]]])):  # mea
 def class_image_to_image(class_id_image, class_id_to_rgb_map):
     """Map the class image to a rgb-color image."""
     colored_image = np.zeros((class_id_image.shape[0], class_id_image.shape[1], 3), np.uint8)
-    for i in range(-1, 256):  # go through all possible classes and color their regions at once
+    for i in range(np.amin(class_id_image), np.amax(class_id_image)):  # go through all possible classes and color their regions at once
         try:
             cl = class_id_to_rgb_map[i]
             colored_image[class_id_image[:, :] == i] = cl.color
@@ -28,7 +32,7 @@ def class_image_to_image(class_id_image, class_id_to_rgb_map):
 def gt_image_to_class_image(gt_image, class_id_to_rgb_map):
     """Map the rgb-color gt_image to a class image."""
     class_image = np.zeros((gt_image.shape[0], gt_image.shape[1]), np.uint8)
-    for class_id in range(-1, 256):  # go through possible classes and color their regions at once
+    for class_id in range(np.amin(class_id_image), np.amax(class_id_image)):  # go through possible classes and color their regions at once
         try:
             class_color = list(class_id_to_rgb_map[class_id].color)
             # print("treating class %i i.e. color %s" % (class_id, class_color))

@@ -1,4 +1,5 @@
 #!/usr/bin/python
+"""Setup script for a Keras/Tensorflow implementation of Pyramid Scene Parsing Networks."""
 
 from setuptools import setup
 
