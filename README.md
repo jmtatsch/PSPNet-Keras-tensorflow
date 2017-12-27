@@ -1,5 +1,7 @@
 # A Keras implementation of Pyramid Scene Parsing Networks [PSPNet](https://github.com/hszhao/PSPNet)
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/baa80567e20a4d1a82c3e75a4b0d8050)](https://www.codacy.com/app/jmtatsch/PSPNet-Keras-tensorflow?utm_source=github.com&utm_medium=referral&utm_content=jmtatsch/PSPNet-Keras-tensorflow&utm_campaign=badger)
+
 Original Paper and implementation:
 
 ```
