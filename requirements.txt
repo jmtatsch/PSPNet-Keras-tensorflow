@@ -4,7 +4,7 @@ pillow
 matplotlib
 tensorflow
 tensorflow-gpu
-keras
+keras==2.1.2
 h5py
 requests
 git+https://github.com/jmtatsch/cityscapesScripts.git#egg=cityscapesscripts-0.1

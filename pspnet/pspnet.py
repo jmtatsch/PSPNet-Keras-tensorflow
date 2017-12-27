@@ -21,7 +21,7 @@ from keras import backend as K
 from keras.models import model_from_json
 import tensorflow as tf
 from layers_builder import build_pspnet
-from utils import color_class_image, gt_image_to_class_image
+from utils import download_weights, preprocess_image, color_class_image, gt_image_to_class_image
 from evaluation import evaluate_iou
 
 
@@ -39,7 +39,7 @@ class PSPNet(object):
         h5_path = join("..", "weights", "keras", weights + ".h5")
 
         if not isfile(json_path) and not isfile(h5_path):
-            self.download_weights(weights)
+            download_weights(weights)
 
         if isfile(json_path) and isfile(h5_path):
             print("Keras model & weights found, loading...")
@@ -65,24 +65,6 @@ class PSPNet(object):
                                       input_shape=self.input_shape)
             self.set_npy_weights(weights)
 
-    def download_weights(self, name):
-        """Download Keras weights from Dropbox."""
-        print("Downloading Keras weights from Dropbox ...")
-        link_dict = {'pspnet50_ade20k.h5': 'https://www.dropbox.com/s/0uxn14y26jcui4v/pspnet50_ade20k.h5?dl=1',
-                     'pspnet50_ade20k.json': 'https://www.dropbox.com/s/v41lvku2lx7lh6m/pspnet50_ade20k.json?dl=1',
-                     'pspnet101_cityscapes.h5': 'https://www.dropbox.com/s/c17g94n946tpalb/pspnet101_cityscapes.h5?dl=1',
-                     'pspnet101_cityscapes.json': 'https://www.dropbox.com/s/fswowe8e3o14tdm/pspnet101_cityscapes.json?dl=1',
-                     'pspnet101_voc2012.h5': 'https://www.dropbox.com/s/uvqj2cjo4b9c5wg/pspnet101_voc2012.h5?dl=1',
-                     'pspnet101_voc2012.json': 'https://www.dropbox.com/s/rr5taqu19f5fuzy/pspnet101_voc2012.json?dl=1'}
-
-        for key in link_dict:
-            if name in key:
-                url = link_dict[key]
-                print("Downloading %s from %s" % (key, url))
-                response = requests.get(url)
-                with open(join("..", "weights", "keras", key), 'wb') as f:
-                    f.write(response.content)
-
     def predict(self, img, flip_evaluation):
         """
         Predict segementation for an image.
@@ -94,8 +76,8 @@ class PSPNet(object):
         if img.shape[0:2] != self.input_shape:
             print("Input %s not fitting for network size %s, resizing. You may want to try sliding prediction for better results." % (img.shape[0:2], self.input_shape))
             img = misc.imresize(img, self.input_shape)
-        # input_data = self.preprocess_image(img)
-        input_data = self.preprocess_image(img, mean=[[[174.08136209, 163.97867657, 138.72837669]]])
+        # input_data = preprocess_image(img)
+        input_data = preprocess_image(img, mean=[[[174.08136209, 163.97867657, 138.72837669]]])
 
         # debug(self.model, input_data)
 
@@ -112,14 +94,6 @@ class PSPNet(object):
             prediction = ndimage.zoom(prediction, (1.*h_ori/h, 1.*w_ori/w, 1.),
                                       order=1, prefilter=False)
         return prediction
-
-    def preprocess_image(self, img, mean=np.array([[[123.68, 116.779, 103.939]]])):  # mean in rgb order
-        """Preprocess an image as input."""
-        float_img = img.astype('float16')
-        centered_image = float_img - mean
-        bgr_image = centered_image[:, :, ::-1]  # RGB => BGR
-        input_data = bgr_image[np.newaxis, :, :, :]  # Append sample dimension for keras
-        return input_data
 
     def set_npy_weights(self, weights_path):
         """Set weights from the intermediary npy file."""

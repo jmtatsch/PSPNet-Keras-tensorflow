@@ -4,16 +4,24 @@ import numpy as np
 from keras.models import Model
 
 
+def preprocess_image(img, mean=np.array([[[123.68, 116.779, 103.939]]])):  # mean in rgb order
+    """Preprocess an image as input."""
+    float_img = img.astype('float16')
+    centered_image = float_img - mean
+    bgr_image = centered_image[:, :, ::-1]  # RGB => BGR
+    input_data = bgr_image[np.newaxis, :, :, :]  # Append sample dimension for keras
+    return input_data
+
+
 def class_image_to_image(class_id_image, class_id_to_rgb_map):
     """Map the class image to a rgb-color image."""
     colored_image = np.zeros((class_id_image.shape[0], class_id_image.shape[1], 3), np.uint8)
-    for i in range(-1, 256):  # go through possible classes and color their regions at once
+    for i in range(-1, 256):  # go through all possible classes and color their regions at once
         try:
             cl = class_id_to_rgb_map[i]
             colored_image[class_id_image[:, :] == i] = cl.color
         except KeyError as key_error:
             print("Warning: could not resolve color of classid %s" % key_error)
-            pass
     return colored_image
 
 
@@ -26,8 +34,7 @@ def gt_image_to_class_image(gt_image, class_id_to_rgb_map):
             # print("treating class %i i.e. color %s" % (class_id, class_color))
             class_image[np.where((gt_image == class_color).all(axis=2))] = class_id
         except KeyError as key_error:
-            # print("Warning: could not resolve classid %s" % key_error)
-            pass
+            print("Warning: could not resolve classid %s" % key_error)
     return class_image
 
 
@@ -55,6 +62,25 @@ def to_color(category):
     """Map each category color a good distance from each other on the HSV color space."""
     v = (category-1)*(137.5/360)
     return colorsys.hsv_to_rgb(v, 1, 1)
+
+
+def download_weights(name):
+    """Download Keras weights from Dropbox."""
+    print("Downloading Keras weights from Dropbox ...")
+    link_dict = {'pspnet50_ade20k.h5': 'https://www.dropbox.com/s/0uxn14y26jcui4v/pspnet50_ade20k.h5?dl=1',
+                 'pspnet50_ade20k.json': 'https://www.dropbox.com/s/v41lvku2lx7lh6m/pspnet50_ade20k.json?dl=1',
+                 'pspnet101_cityscapes.h5': 'https://www.dropbox.com/s/c17g94n946tpalb/pspnet101_cityscapes.h5?dl=1',
+                 'pspnet101_cityscapes.json': 'https://www.dropbox.com/s/fswowe8e3o14tdm/pspnet101_cityscapes.json?dl=1',
+                 'pspnet101_voc2012.h5': 'https://www.dropbox.com/s/uvqj2cjo4b9c5wg/pspnet101_voc2012.h5?dl=1',
+                 'pspnet101_voc2012.json': 'https://www.dropbox.com/s/rr5taqu19f5fuzy/pspnet101_voc2012.json?dl=1'}
+
+    for key in link_dict:
+        if name in key:
+            url = link_dict[key]
+            print("Downloading %s from %s" % (key, url))
+            response = requests.get(url)
+            with open(join("..", "weights", "keras", key), 'wb') as f:
+                f.write(response.content)
 
 
 def debug(model, data):

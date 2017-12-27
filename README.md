@@ -18,17 +18,17 @@ Original Paper and implementation:
 # Installation:
 
 ```bash
-python setup.py install
+python3 setup.py install
 ```
 
 # Usage:
 
 ```bash
-python pspnet.py
-python pspnet.py -m pspnet101_cityscapes -i ../example_images/munster_000013_000019_leftImg8bit.png -o ../example_results/munster_000013_000019_leftImg8bit.png -s -f
-python pspnet.py -m pspnet101_voc2012 -i ../example_images/000129.jpg -o ../example_results/000129.png -s -f
-python pspnet.py -m pspnet50_ade20k -i ../example_images/ADE_val_00000435.jpg -o ../example_results/ADE_val_00000435.png -s -f
-python pspnet.py -m pspnet50_ade20k -i ../example_images/ade20k.jpg -o ../example_results/ade20k.png -s -f
+python3 pspnet.py
+python3 pspnet.py -m pspnet101_cityscapes -i ../example_images/munster_000013_000019_leftImg8bit.png -o ../example_results/munster_000013_000019_leftImg8bit.png -s -f
+python3 pspnet.py -m pspnet101_voc2012 -i ../example_images/000129.jpg -o ../example_results/000129.png -s -f
+python3 pspnet.py -m pspnet50_ade20k -i ../example_images/ADE_val_00000435.jpg -o ../example_results/ADE_val_00000435.png -s -f
+python3 pspnet.py -m pspnet50_ade20k -i ../example_images/ade20k.jpg -o ../example_results/ade20k.png -s -f
 
 ```
 
@@ -53,7 +53,7 @@ python pspnet.py -m pspnet50_ade20k -i ../example_images/ade20k.jpg -o ../exampl
 Converted trained weights are needed to run the network and will be downloaded from dropbox the first time you use a model. The weights of the original caffemodel were converted with weight_converter.py as follows:
 
 ```bash
-python weight_converter.py <path to .prototxt> <path to .caffemodel>
+python3 weight_converter.py <path to .prototxt> <path to .caffemodel>
 ```
 
 Running the converter needs the compiled original PSPNet caffe code and pycaffe.
