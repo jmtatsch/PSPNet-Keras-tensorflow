@@ -33,9 +33,9 @@ def evaluate_iou(pred_imgs, gt_imgs, classes=35):
     intersection = np.diag(confusion_matrix)  # count the correct classifications i.e. the intersection
     union = np.sum(confusion_matrix, axis=0) + np.sum(confusion_matrix, axis=1) - intersection  # sum cols(predicted) + sum rows(groundtruth) - intersection
     with np.errstate(divide='ignore', invalid='ignore'):  # ignore divisions by zero
-        IOU = intersection/union
-    meanIOU = np.nanmean(IOU)  # ignore the resulted NaNs
+        iou = intersection/union
+    mean_iou = np.nanmean(iou)  # ignore the resulted NaNs
     print("confusion_matrix: \n%s" % confusion_matrix)
-    print("IoU : \n%s" % IOU)
-    print("mIoU: %f" % meanIOU)
-    return confusion_matrix, IOU, meanIOU
+    print("IoU : \n%s" % iou)
+    print("mIoU: %f" % mean_iou)
+    return confusion_matrix, iou, mean_iou

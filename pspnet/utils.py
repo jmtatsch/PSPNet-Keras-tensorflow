@@ -20,7 +20,6 @@ def preprocess_image(img, mean=np.array([[[123.68, 116.779, 103.939]]])):  # mea
 def class_image_to_image(class_id_image, class_id_to_rgb_map):
     """Map the class image to a rgb-color image."""
     colored_image = np.zeros((class_id_image.shape[0], class_id_image.shape[1], 3), np.uint8)
-    print(np.unique(class_id_image))
     for class_id in np.nditer(np.unique(class_id_image)):  # get all the unique classes and color at once
         try:
             cl = class_id_to_rgb_map[int(class_id)]

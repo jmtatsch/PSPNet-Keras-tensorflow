@@ -28,6 +28,7 @@ python3 setup.py install
 ```bash
 python3 pspnet.py
 python3 pspnet.py -m pspnet101_cityscapes -i ../example_images/munster_000013_000019_leftImg8bit.png -o ../example_results/munster_000013_000019_leftImg8bit.png -s -f
+python3 pspnet.py -m pspnet101_cityscapes -i $CITYSCAPES_DATASET/leftImg8bit/val -o $CITYSCAPES_RESULTS -s -ms -f
 python3 pspnet.py -m pspnet101_voc2012 -i ../example_images/000129.jpg -o ../example_results/000129.png -s -f
 python3 pspnet.py -m pspnet50_ade20k -i ../example_images/ADE_val_00000435.jpg -o ../example_results/ADE_val_00000435.png -s -f
 python3 pspnet.py -m pspnet50_ade20k -i ../example_images/ade20k.jpg -o ../example_results/ade20k.png -s -f

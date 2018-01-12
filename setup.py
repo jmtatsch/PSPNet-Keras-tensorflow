@@ -12,7 +12,7 @@ config = {
     'author_email': 'julian@tatsch.it',
     'version': '0.1',
     'dependency_links': ["https://github.com/jmtatsch/cityscapesScripts/tarball/master#egg=cityscapesscripts-0.1"],
-    'install_requires': ['numpy', 'scipy', 'pillow', 'matplotlib', 'keras==2.1.2',
+    'install_requires': ['numpy', 'scipy', 'pillow', 'matplotlib', 'keras', 'tensorflow-gpu',
                          'h5py', 'requests', 'cityscapesscripts'],
     'packages': ['pspnet'],
     'package_data': {'pspnet': ['example_images/*.*', 'example_results/*.*']},
