@@ -12,6 +12,7 @@ from math import ceil
 import argparse
 import glob
 import fnmatch
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RadioButtons
@@ -23,6 +24,7 @@ from layers_builder import build_pspnet
 from utils import download_weights, preprocess_image, color_class_image, gt_image_to_class_image
 from evaluation import evaluate_iou
 
+warnings.filterwarnings('ignore', '.*output shape of zoom.*')
 
 __author__ = "Vlad Kryvoruchko, Chaoyue Wang, Jeffrey Hu & Julian Tatsch"
 
@@ -75,18 +77,16 @@ class PSPNet(object):
         if img.shape[0:2] != self.input_shape:
             print("Input %s not fitting for network size %s, resizing. You may want to try sliding prediction for better results." % (img.shape[0:2], self.input_shape))
             img = misc.imresize(img, self.input_shape)
-        # input_data = preprocess_image(img)
-        input_data = preprocess_image(img, mean=[[[174.08136209, 163.97867657, 138.72837669]]])
 
+        data = preprocess_image(img, mean=[[[174.08136209, 163.97867657, 138.72837669]]])
         # debug(self.model, input_data)
-
-        regular_prediction = self.model.predict(input_data)[0]
         if flip_evaluation:
-            print("Predict flipped")
-            flipped_prediction = np.fliplr(self.model.predict(np.flip(input_data, axis=2))[0])
-            prediction = (regular_prediction + flipped_prediction) / 2.0
+            input_with_flipped = np.array([data, np.flip(data, axis=1)])
+            prediction_with_flipped = self.model.predict(input_with_flipped)
+            prediction = (prediction_with_flipped[0] + np.fliplr(prediction_with_flipped[1])) / 2.0
         else:
-            prediction = regular_prediction
+            prediction = self.model.predict(np.expand_dims(data, 0))[0]
+        return prediction
 
         if img.shape[0:1] != self.input_shape:  # upscale prediction if necessary
             h, w = prediction.shape[:2]
@@ -372,15 +372,15 @@ def main():
     parser.add_argument('-g', '--groundtruth_path', type=str, default='../example_groundtruth',
                         help='Path to groundtruth')
     parser.add_argument('--id', default="0")
-    parser.add_argument('-s', '--sliding', action='store_true',
+    parser.add_argument('-s', '--sliding', action='store_true', default=True,
                         help="Whether the network should be slided over the original image for prediction.")
-    parser.add_argument('-f', '--flip', action='store_true',
+    parser.add_argument('-f', '--flip', action='store_true', default=True,
                         help="Whether the network should predict on both image and flipped image.")
     parser.add_argument('-ms', '--multi_scale', action='store_true',
                         help="Whether the network should predict on multiple scales.")
     parser.add_argument('-hm', '--heat_maps', action='store_true',
                         help="Whether the network should diplay heatmaps.")
-    parser.add_argument('-v', '--vis', action='store_false',
+    parser.add_argument('-v', '--vis', action='store_true',
                         help="Whether an interactive plot should be diplayed.")
     parser.add_argument('-cci', '--complete_coarse_image', action='store_true',
                         help="Whether a coarse imae should be completed with predictions.")

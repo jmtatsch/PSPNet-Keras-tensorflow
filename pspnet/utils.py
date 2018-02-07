@@ -13,8 +13,7 @@ def preprocess_image(img, mean=np.array([[[123.68, 116.779, 103.939]]])):  # mea
     float_img = img.astype('float16')
     centered_image = float_img - mean
     bgr_image = centered_image[:, :, ::-1]  # RGB => BGR
-    input_data = bgr_image[np.newaxis, :, :, :]  # Append sample dimension for Keras
-    return input_data
+    return bgr_image
 
 
 def class_image_to_image(class_id_image, class_id_to_rgb_map):
