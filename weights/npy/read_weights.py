@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import numpy as np
-weights = np.load("pspnet101_cityscapes.npy").item()
+weights = np.load("pspnet50_ade20k.npy", encoding="latin1").item()
 settable_weights = 0
 for layer, value in weights.items():
     print(layer)

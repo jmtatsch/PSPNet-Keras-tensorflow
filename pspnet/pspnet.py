@@ -21,7 +21,7 @@ from keras import backend as K
 from keras.models import model_from_json
 import tensorflow as tf
 from layers_builder import build_pspnet
-from utils import download_weights, preprocess_image, color_class_image, gt_image_to_class_image
+from utils import download_weights, download_npy_weights, preprocess_image, color_class_image, gt_image_to_class_image
 from evaluation import evaluate_iou
 
 warnings.filterwarnings('ignore', '.*output shape of zoom.*')
@@ -58,6 +58,14 @@ class PSPNet(object):
                     json_string = self.model.to_json()
                     with open(json_path, 'w') as file_handle:
                         file_handle.write(json_string)
+                except SystemError as err:  # bad marshal data error when loading py3.5 model in py3.6
+                    print("Couldn't import model from json because it was build using a different python version: %s" % err)
+                    print("Converting pspnet model from npy")
+                    self.model = build_pspnet(nb_classes=nb_classes,
+                                              resnet_layers=resnet_layers,
+                                              input_shape=self.input_shape)
+                    self.set_npy_weights(weights)
+
             self.model.load_weights(h5_path)
         else:
             print("No Keras model & weights found, import from npy weights.")
@@ -99,6 +107,9 @@ class PSPNet(object):
         npy_weights_path = join("..", "weights", "npy", weights_path + ".npy")
         json_path = join("..", "weights", "keras", weights_path + ".json")
         h5_path = join("..", "weights", "keras", weights_path + ".h5")
+
+        if not isfile(npy_weights_path):
+            download_npy_weights(weights_path)
 
         print("Importing weights from %s" % npy_weights_path)
         weights = np.load(npy_weights_path, encoding="latin1").item()
@@ -489,3 +500,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

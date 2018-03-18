@@ -85,6 +85,22 @@ def download_weights(name):
                 f.write(response.content)
 
 
+def download_npy_weights(name):
+    """Download Numpy weights from Dropbox."""
+    print("Downloading Keras weights from Dropbox ...")
+    link_dict = {'pspnet50_ade20k.npy': 'https://www.dropbox.com/s/slzgd07ijcyl45b/pspnet50_ade20k.npy?dl=1',
+                 'pspnet101_cityscapes.npy': 'https://www.dropbox.com/s/oimz7wrgqhfmkk9/pspnet101_cityscapes.npy?dl=1',
+                 'pspnet101_voc2012.npy': 'https://www.dropbox.com/s/ht3qup5r1nourbg/pspnet101_voc2012.npy?dl=1'}
+
+    for key in link_dict:
+        if name in key:
+            url = link_dict[key]
+            print("Downloading %s from %s" % (key, url))
+            response = requests.get(url)
+            with open(join("..", "weights", "npy", key), 'wb') as f:
+                f.write(response.content)
+
+
 def debug(model, data):
     """Debug model by printing the activations in each layer."""
     names = [layer.name for layer in model.layers]
@@ -104,3 +120,4 @@ def array_to_str(a):
     """Dump activation parameters into a string."""
     return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a),
                                    np.max(a), np.mean(a))
+
